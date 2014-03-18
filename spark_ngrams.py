@@ -21,14 +21,21 @@ print 'Number of lines: %d' % num_records
 tm = logData.map(lambda s: [(json.loads(s)['date'], word.lower())\
 				 for word in json.loads(s)['text'].split(' ')])\
 			.flatMap(lambda l: l).filter(lambda l: l[1] not in stopwords)\
-			.map(lambda l: (l, 1))
-# tm = tm.flatMap(lambda l: l).map(lambda l: (l, 1))
-tm = tm.reduceByKey(lambda _, x: _ + x).map(lambda x: (x[1], x[0])).sortByKey()
-# tm = tm.flatMap(lambda l: l).countByKey().map(lambda x: (x[1], x[0][0], x[0][1])).sortByKey(ascending=False)
+			.map(lambda l: (l, 1))\
+			.reduceByKey(lambda _, x: _ + x)\
+			.map(lambda x: (x[1], x[0]))\
+			.sortByKey(ascending=False)\
+			.filter(lambda v: (v[0] > 5) and (v[0] <= 100))\
+			.map(lambda v: (v[0], v[1][0], v[1][1]))
+nr = tm.count()
 op = tm.collect()
+# tm = tm.flatMap(lambda l: l).map(lambda l: (l, 1))
 # for word, date, count in op:
 # 	print 'word: %s, date: %s, count: %d' % (word, date, count)
 # for count, date, word in op:
 # 	print 'date: %s, word: %s, count: %d' % (date, word, count)
-for x in op:
-	print x
+# for x in op:
+# 	print 'date: %s, word: %s, count: %d' % (x[1][0], x[1][1], x[0])
+for count, date, word in op:
+	print 'date: %s, word: %s, count: %d' % (date, word, count)
+print 'Num of records: %d' % nr
