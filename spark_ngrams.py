@@ -15,8 +15,13 @@ sc = SparkContext(conf=conf)
 logData = sc.textFile(logDir) # reads all files in the folder
 num_records = logData.count() # counts number of records
 print 'Number of lines: %d' % num_records
-tm = logData.map(lambda s: [(json.loads(s)['date'], word.lower()) for word in json.loads(s)['text'].split(' ')])
-tm = tm.flatMap(lambda l: l).filter(lambda l: l[1] not in stopwords).map(lambda l: (l, 1))
+# flatMap will flatten even the first element of a tuple with a list in it 
+# (e.g. [(a, [b, c]), ...] becomes [a, b, c, ...]). So fix this by sending
+# [(a,b), (a, c), ...] which then becomes (a, b), (a, c), ...
+tm = logData.map(lambda s: [(json.loads(s)['date'], word.lower())\
+				 for word in json.loads(s)['text'].split(' ')])\
+			.flatMap(lambda l: l).filter(lambda l: l[1] not in stopwords)\
+			.map(lambda l: (l, 1))
 # tm = tm.flatMap(lambda l: l).map(lambda l: (l, 1))
 tm = tm.reduceByKey(lambda _, x: _ + x).map(lambda x: (x[1], x[0])).sortByKey()
 # tm = tm.flatMap(lambda l: l).countByKey().map(lambda x: (x[1], x[0][0], x[0][1])).sortByKey(ascending=False)
